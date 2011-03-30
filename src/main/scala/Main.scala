@@ -4,49 +4,14 @@
 // まずはスパゲチーソースで即応だ！ by @akihiro4chawon
 
 object Main extends Application {
-  type Duration = (Int, Int, Int, Int)
+  type IntTuple4 = (Int, Int, Int, Int)
 
-  def timePointInMinutes(hour: Int, min: Int) =
-    for {
-      inMinutes <- Some(60 * hour + min)
-      if inMinutes <= 60 * 24
-      if 0 to 24 contains hour
-      if 0 to 60 contains min
-    } yield inMinutes
-
-  def durationInMinutes(d: Duration) = {
-    val (h1, m1, h2, m2) = d
-    for {
-      t1 <- timePointInMinutes(h1, m1)
-      t2 <- timePointInMinutes(h2, m2)
-      if (t1 <= t2)
-    } yield t1 until t2
-  }
-
-  def timeDuplicationCheck2(durations: Duration*) = {
-    // List[Option[A]] -> Option[List[A]] への変換
-    // (元のリストに一つでも None が含まれれば None； 全て Some の場合にのみ Some(List)
-    // (scalaz.MA.sequence (F[G[A] => G[F[A]]) の F/G を List/Option 限定したもの)
-    def sequence[A](so: Seq[Option[A]]): Option[List[A]] =
-      so.foldLeft(Option(List[A]())) {(os, o) => for (s <- os; e <- o) yield e :: s}
-    
-    def toHourMin(min: Int) = Seq(min / 60, min % 60)
-    
-    def combineIntoPeriods(dupMins: Seq[Int]) = {
-      // 区切り(増分が1以上)を列挙
-      def delimit(l: Seq[Int]) = for {
-        (a, b) <- (-10 +: l) zip (l :+ -10) if b - a != 1
-        x <- Seq(a + 1, b) if x > 0
-      } yield x
-      delimit(dupMins) flatMap toHourMin grouped 4 map {_.mkString("(", ", ", ")")}
-    }
-
-    // 重複している要素のみを返す
-    def filterDuplicatedMinutes(minSet: Seq[Int]) =
-      (minSet groupBy identity collect {case (e, l) if l.size > 1 => e}).toSeq.sorted
-    
-    for (minRange <- sequence(durations map durationInMinutes))
-      yield combineIntoPeriods(filterDuplicatedMinutes(minRange.flatten)) mkString ", "
+  def timeDuplicationCheck2(durations: IntTuple4*) = {
+    def format(p: ValidTimePeriod) = 
+      (Seq(p.begin, p.end) flatMap {t => Seq(t.hour, t.min)}).mkString("(", ", ", ")") 
+      
+    val periods = durations map (TimePeriod.fromHoursMinutes _).tupled
+    TimePeriod.overlappingPeriod(periods :_*) map {_ map format mkString ", "} 
   }
 
   println(timeDuplicationCheck2( (10, 0, 12, 0), (11, 0, 11, 30), (10, 30, 11, 15) )) // => Some(10, 30, 11, 30)

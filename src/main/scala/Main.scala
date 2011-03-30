@@ -23,24 +23,42 @@ object Main extends Application {
     } yield t1 until t2
   }
 
-  // 仕様変更で絶賛大炎上中！！！（＞＜）
   def timeDuplicationCheck2(durations: Duration*) = {
+    // List[Option[A]] -> Option[List[A]] への変換
+    // (元のリストに一つでも None が含まれれば None； 全て Some の場合にのみ Some(List)
+    // (scalaz.MA.sequence (F[G[A] => G[F[A]]) の F/G を List/Option 限定したもの)
+    def sequence[A](so: Seq[Option[A]]): Option[List[A]] =
+      so.foldLeft(Option(List[A]())) {(os, o) => for (s <- os; e <- o) yield e :: s}
+    
     def toHourMin(min: Int) = Seq(min / 60, min % 60)
-    def separate(l: List[Int]) = {
-      val sep = for {
+    
+    def combineIntoPeriods(dupMins: Seq[Int]) = {
+      // 区切り(増分が1以上)を列挙
+      def delimit(l: Seq[Int]) = for {
         (a, b) <- (-10 +: l) zip (l :+ -10) if b - a != 1
-        x <- Seq(a, b) if x > 0
+        x <- Seq(a + 1, b) if x > 0
       } yield x
-      (sep grouped 2).toSeq flatMap {case Seq(m1, m2) => Seq(m1, m2 + 1)} flatMap toHourMin grouped 4 map {_.mkString("(", ", ", ")")}
+      delimit(dupMins) flatMap toHourMin grouped 4 map {_.mkString("(", ", ", ")")}
     }
-    for {
-      minSet <- (Option(Seq[Int]()) /: (durations map durationInMinutes)) ((xsOpt, xOpt) => for (xs <- xsOpt; x <- xOpt) yield x ++ xs)
-    } yield separate((minSet groupBy identity collect {case (m, ml) if ml.size > 1 => m}).toList.sorted).mkString("(", ", ", ")")
+
+    // 重複している要素のみを返す
+    def filterDuplicatedMinutes(minSet: Seq[Int]) =
+      (minSet groupBy identity collect {case (e, l) if l.size > 1 => e}).toSeq.sorted
+    
+    for (minRange <- sequence(durations map durationInMinutes))
+      yield combineIntoPeriods(filterDuplicatedMinutes(minRange.flatten)) mkString ", "
   }
 
-  println(timeDuplicationCheck2( (10, 0, 12, 0), (11, 0, 11, 30), (10, 30, 11, 15) )) // => Sone(10, 30, 11, 30)
+  println(timeDuplicationCheck2( (10, 0, 12, 0), (11, 0, 11, 30), (10, 30, 11, 15) )) // => Some(10, 30, 11, 30)
   println(timeDuplicationCheck2( (9, 0, 17, 0), (19, 0, 21, 0) )) // => Some(())
 
   println(timeDuplicationCheck2( (19, 0, 17, 0), (19, 0, 21, 0) )) // => None // 入力時刻がおかしい場合
 }
 
+
+    // 重複している要素のみを返す
+//    def filterDuplicatedMinutes(minSet: Seq[Int]) = {
+//      val tbl = Array.fill(24 * 60)(0)
+//      minSet foreach {tbl(_) += 1}
+//      0 until 24 * 60 filter {tbl(_) > 1}
+//    }

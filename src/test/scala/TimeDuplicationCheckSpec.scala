@@ -25,7 +25,7 @@ class TimeDuplicationCheckSuit extends FunSuite with ShouldMatchers {
   //出力：(12, 0, 12, 15)
   test("called with two periods that have one overlapping period") {
     val ret = timeDuplicationCheck2((12, 0, 13, 0), (10, 0, 12, 15))
-    ret should be (Some("((12, 0, 12, 15))"))
+    ret should be (Some("(12, 0, 12, 15)"))
   }
   
   //例2) 時間帯として三つ（午後4時から午後23時、午前5時から午前10時30分、午前9時から午後5時まで）が与えられた場合
@@ -33,7 +33,7 @@ class TimeDuplicationCheckSuit extends FunSuite with ShouldMatchers {
   //出力：(9, 0, 10, 30), (16, 0, 17, 0)
   test("called with three periods that have two overlapping periods") {
     val ret = timeDuplicationCheck2((16, 0, 23, 0), (9, 0, 17, 0), (5, 0, 10, 30))
-    ret should be (Some("((9, 0, 10, 30), (16, 0, 17, 0))"))
+    ret should be (Some("(9, 0, 10, 30), (16, 0, 17, 0)"))
   }  
 
   //例3) 時間帯として六つ（午前9時から午後11時まで、午後1時から午後2時、午後3時から午後4時、午後5時から午後6時、午後7時から午後8時、午後9時から午後10時）が与えられた場合
@@ -41,7 +41,7 @@ class TimeDuplicationCheckSuit extends FunSuite with ShouldMatchers {
   //出力：(13, 0, 14, 0), (15, 0, 16, 0), (17, 0, 18, 0), (19, 0, 20, 0), (21, 0, 22, 0)
   test("called with six periods that have five overlapping periods") {
     val ret = timeDuplicationCheck2((12, 0, 23, 0), (13, 0, 14, 0), (15, 0, 16, 0), (17, 0, 18, 0), (19, 0, 20, 0), (21, 0, 22, 0))
-    ret should be (Some("((13, 0, 14, 0), (15, 0, 16, 0), (17, 0, 18, 0), (19, 0, 20, 0), (21, 0, 22, 0))"))
+    ret should be (Some("(13, 0, 14, 0), (15, 0, 16, 0), (17, 0, 18, 0), (19, 0, 20, 0), (21, 0, 22, 0)"))
   }  
   
   //例4) 時間帯として何度も重複している場合
@@ -49,7 +49,7 @@ class TimeDuplicationCheckSuit extends FunSuite with ShouldMatchers {
   //出力：(10, 30, 11, 30)
   test("check if multiple overlap periods are combined") {
     val ret = timeDuplicationCheck2((10, 0, 12, 0), (11, 0, 11, 30), (10, 30, 11, 15))
-    ret should be (Some("((10, 30, 11, 30))"))
+    ret should be (Some("(10, 30, 11, 30)"))
   }  
   
   //例5) 重複なし
@@ -57,7 +57,7 @@ class TimeDuplicationCheckSuit extends FunSuite with ShouldMatchers {
   //出力：なし
   test("called with non overlapping time periods") {
     val ret = timeDuplicationCheck2((9, 0, 17, 0), (19, 0, 21, 0))
-    ret should be (Some("()"))
+    ret should be (Some(""))
   }  
 
   test("called with illegal time period") {
